@@ -8,8 +8,8 @@ public class SimpleFirstPersonController : MonoBehaviour
     public float jumpForce = 5f; // Jump height
     public float gravity = -9.8f; // Gravity force
 
-    private float rotationX = 0f; // Rotation on the X-axis (up/down)
-    private float rotationY = 0f; // Rotation on the Y-axis (left/right)
+    private float rotationX = 0; // Rotation on the X-axis (up/down)
+    private float rotationY = 0; // Rotation on the Y-axis (left/right)
     private CharacterController characterController;
 
     private Vector3 moveDirection = Vector3.zero;
