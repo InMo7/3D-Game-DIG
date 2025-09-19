@@ -14,7 +14,7 @@ public class SimpleFirstPersonController : MonoBehaviour
 
     private Vector3 moveDirection = Vector3.zero;
     private Vector3 velocity; // This will store the velocity for gravity and jumping
-    private Camera camera;
+    private new Camera camera;
 
     void Start()
     {
