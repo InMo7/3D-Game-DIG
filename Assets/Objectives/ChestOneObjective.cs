@@ -9,6 +9,11 @@ public class ChestOneObjective : MonoBehaviour
     public float completionRadius = .5f; // Radius to consider objective complete
     private bool isComplete = false;
 
+    public bool IsComplete // Public getter
+    {
+        get { return isComplete; }
+    }
+
     void Update()
     {
         if (isComplete) return;

@@ -8,7 +8,10 @@ public class ChestThreeObjective : MonoBehaviour
     public TextMeshProUGUI distanceText; // UI text for distance
     public float completionRadius = .5f; // Radius to consider objective complete
     private bool isComplete = false;
-
+    public bool IsComplete // Public getter
+    {
+        get { return isComplete; }
+    }
     void Update()
     {
         if (isComplete) return;
