@@ -3,64 +3,101 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f; // Movement speed
+    public float jumpForce = 5f; // Jump force
+    public float gravity = -9.81f; // Gravity force
     public float lookSpeedX = 2f; // Mouse X rotation speed
     public float lookSpeedY = 2f; // Mouse Y rotation speed
-    public float jumpForce = 5f; // Jump height
-    public float gravity = -9.8f; // Gravity force
+    public float maxLookAngle = 80f; // Limit vertical camera rotation
+    public Transform cameraRig; // Assign CameraRig in Inspector for camera follow
 
-    private float rotationX = 0; // Rotation on the X-axis (up/down)
-    private float rotationY = 0; // Rotation on the Y-axis (left/right)
     private CharacterController characterController;
-
-    private Vector3 moveDirection = Vector3.zero;
-    private Vector3 velocity; // This will store the velocity for gravity and jumping
-    private new Camera camera;
-
-    private Animator animator;  // Reference to the Animator component
-    private Rigidbody rb;  // Optional: For physics-based movement
+    private Camera playerCamera;
+    private Animator animator;
+    private Vector3 velocity; // For gravity and jumping
+    private float rotationX = 0f; // Camera vertical rotation
+    private bool isGrounded; // Check if player is on the ground
 
     void Start()
     {
-        animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();  // If you added a Rigidbody
-      
+        // Get components
         characterController = GetComponent<CharacterController>();
-        Cursor.lockState = CursorLockMode.Locked; // Lock the cursor to the center of the screen
-        Cursor.visible = false; // Hide the cursor
-        camera = GetComponentInChildren<Camera>();
+        animator = GetComponent<Animator>();
+        playerCamera = cameraRig != null ? cameraRig.GetComponentInChildren<Camera>() : GetComponentInChildren<Camera>();
+
+        // Error checking
+        if (characterController == null) Debug.LogError("CharacterController component missing!");
+        if (playerCamera == null) Debug.LogError("Camera component missing! Add a Camera to CameraRig or as a child.");
+        if (animator == null) Debug.LogWarning("Animator component missing! Animations won't play.");
+
+        // Lock cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
     {
-        // Get input for movement
-        float horizontal = Input.GetAxis("Horizontal");  // A/D or Left/Right arrows
-        float vertical = Input.GetAxis("Vertical");  // W/S or Up/Down arrows
+        // Handle cursor lock/unlock
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = Cursor.lockState != CursorLockMode.Locked;
+        }
 
-        // Calculate movement direction in local space
+        // Check if grounded
+        isGrounded = characterController.isGrounded;
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f; // Small downward force to keep grounded
+        }
+
+        // Get movement input
+        float horizontal = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right
+        float vertical = Input.GetAxisRaw("Vertical"); // W/S or Up/Down
         Vector3 moveDirection = new Vector3(horizontal, 0f, vertical).normalized;
 
-        // Move the character (using Transform for simplicity; use rb for physics)
-        if (rb != null)
+        // Move character
+        if (moveDirection.magnitude >= 0.1f)
         {
-            // Physics-based movement
-            Vector3 velocity = transform.TransformDirection(moveDirection) * moveSpeed;
-            rb.linearVelocity = new Vector3(velocity.x, rb.linearVelocity.y, velocity.z);  // Preserve Y for gravity
-        }
-        else
-        {
-            // Simple transform movement
-            transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
+            moveDirection = transform.TransformDirection(moveDirection);
+            characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
         }
 
-        // Rotate towards movement direction if moving
-        if (moveDirection != Vector3.zero)
+        // Handle jumping
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime);
+            velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity); // Jump formula
+            animator.SetTrigger("Jump"); // Trigger jump animation
         }
 
-        // Update Animator Speed parameter based on movement magnitude
+        // Apply gravity
+        velocity.y += gravity * Time.deltaTime;
+        characterController.Move(velocity * Time.deltaTime);
+
+        // Update animator
         float speed = moveDirection.magnitude;
         animator.SetFloat("Speed", speed);
+        animator.SetBool("IsGrounded", isGrounded);
+
+        // Handle mouse rotation
+        if (playerCamera != null)
+        {
+            float mouseX = Input.GetAxis("Mouse X") * lookSpeedX * Time.deltaTime * 100f;
+            float mouseY = Input.GetAxis("Mouse Y") * lookSpeedY * Time.deltaTime * 100f;
+
+            // Rotate player (Y-axis)
+            transform.Rotate(Vector3.up * mouseX);
+
+            // Rotate camera (X-axis, up/down)
+            rotationX -= mouseY; // Invert for natural look
+            rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
+            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0f, 0f);
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Unlock cursor when object is destroyed (e.g., scene change)
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }
