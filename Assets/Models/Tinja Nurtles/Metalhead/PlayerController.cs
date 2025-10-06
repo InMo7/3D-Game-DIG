@@ -5,8 +5,8 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float jumpForce = 5f;
     public float gravity = -9.81f;
-    public float lookSpeedX = 2f; // Horizontal orbit speed
-    public float lookSpeedY = 2f; // Vertical tilt speed
+    public float lookSpeedX = 2f; // Horizontal orbit speed (for player and camera)
+    public float lookSpeedY = 2f; // Vertical tilt speed (for camera)
     public float maxLookAngle = 80f;
     public Transform cameraRig;
     public Transform cameraTarget; // Reference to the sphere
@@ -16,8 +16,8 @@ public class PlayerController : MonoBehaviour
     private Camera playerCamera;
     private Animator animator;
     private Vector3 velocity;
-    private float rotationX = 0f; // Vertical tilt
-    private float rotationY = 0f; // Horizontal orbit
+    private float rotationX = 0f; // Vertical tilt for camera
+    private float rotationY = 0f; // Horizontal orbit for camera
     private bool isGrounded;
     private float jumpBufferTime = 0.2f;
     private float lastJumpPressTime = -1f;
@@ -115,15 +115,18 @@ public class PlayerController : MonoBehaviour
 
         if (playerCamera != null && cameraRig != null && cameraTarget != null)
         {
-            Debug.Log("CameraTarget Rotation: " + cameraTarget.rotation.eulerAngles + ", Player Rotation: " + transform.eulerAngles);
-
-            // Orbit with mouse X, tilt with mouse Y
+            // Player rotation
             float mouseX = Input.GetAxis("Mouse X") * lookSpeedX * Time.deltaTime * 100f;
-            float mouseY = Input.GetAxis("Mouse Y") * lookSpeedY * Time.deltaTime * 100f;
+            Debug.Log("Mouse X Input: " + mouseX);
+            transform.Rotate(Vector3.up * mouseX); // Rotate player
 
-            rotationY += mouseX; // Horizontal orbit
+            // Camera orbit and tilt
+            rotationY += mouseX; // Horizontal orbit (tied to player rotation)
+            float mouseY = Input.GetAxis("Mouse Y") * lookSpeedY * Time.deltaTime * 100f;
             rotationX -= mouseY; // Vertical tilt
             rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
+
+            Debug.Log("CameraTarget Rotation: " + cameraTarget.rotation.eulerAngles + ", Player Rotation: " + transform.eulerAngles);
 
             // Apply rotation to cameraRig
             Quaternion targetRotation = Quaternion.Euler(0, rotationY, 0) * Quaternion.Euler(rotationX, 0, 0);
